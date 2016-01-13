@@ -1,19 +1,24 @@
 #!/usr/bin/env bash
 
-mkdir -p ~/Pictures/bing-wallpapers/
-cd ~/Pictures/bing-wallpapers/
+PICTURE_DIR="/e/photo/"
 
-# for more urls, goto http://windows.microsoft.com/en-US/windows/themes?T1=rss
-# download a theme, use a text editor to open it, and find the url.
-curl "http://themeserver.microsoft.com/default.aspx?p=Windows&c=LandScapes&m=en-US" | grep -o 'url="[^"]*"' | sed -e 's/url="\([^"]*\)"/\1/' | sed -e "s/ /%20/g" > tmp.txt
+mkdir -p $PICTURE_DIR
 
-#read file line
-while read line
+urls=( $(curl -s http://www.bing.com | \
+    grep -Eo "url:'.*?'" | \
+    sed -e "s/url:'\([^']*\)'.*/http:\/\/bing.com\1/" | \
+    sed -e "s/\\\//g") )
+
+while (true)
 do
-    fileName=$(echo $line | sed -e "s;.*/\([^\/]*\)$;\1;")
-    if [[ -f $fileName ]]; then
-        echo "$fileName already exists" > log.txt
+for p in ${urls[@]}; do
+    filename=$(echo $p|sed -e "s/.*\/\(.*\)/\1/")
+    if [ ! -f $PICTURE_DIR/$filename ]; then
+        echo "Downloading: $filename ..."
+        curl -Lo "$PICTURE_DIR/$filename" $p
     else
-        curl -O $line;
+        echo "Skipping: $filename ..."
     fi
-done < "tmp.txt"
+done
+sleep 7200
+done
